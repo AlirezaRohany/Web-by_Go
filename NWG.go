@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"html/template"
 )
 
 func main(){
@@ -16,9 +17,10 @@ func main(){
 
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/view/", viewHandler)
+	http.HandleFunc("/edit/", editHandler)
 	log.Fatal(http.ListenAndServe(":8080",nil))
 
-	// todo:editing pages
+	// todo:handlin non ex
 }
 
 
@@ -45,8 +47,42 @@ func handler(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, "Hello!, I hate %s!\n", r.URL.Path[1:])
 }
 
+// func viewHandler(w http.ResponseWriter, r *http.Request){
+// 	title:=r.URL.Path[len("/view/"):]
+// 	p, _ := loadPage(title)
+// 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>",p.Title,p.Body)
+// }
+
+// func editHandler(w http.ResponseWriter, r *http.Request) {
+//     title := r.URL.Path[len("/edit/"):]
+//     p, err := loadPage(title)
+//     if err != nil {
+//         p = &Page{Title: title}
+//     }
+//     fmt.Fprintf(w, "<h1>Editing %s</h1>"+
+//         "<form action=\"/save/%s\" method=\"POST\">"+
+//         "<textarea name=\"body\">%s</textarea><br>"+
+//         "<input type=\"submit\" value=\"Save\">"+
+//         "</form>",
+//         p.Title, p.Title, p.Body)
+// }
+
+func editHandler(w http.ResponseWriter, r *http.Request){
+	title:= r.URL.Path[len("/edit/"):]
+	p, err:=loadPage(title)
+	if err!=nil{
+		p=&Page{Title:title}
+	}
+	renderTemplate(w,"statics/edit",p)
+}
+
 func viewHandler(w http.ResponseWriter, r *http.Request){
-	title:=r.URL.Path[len("/view/"):]
+	title:= r.URL.Path[len("/view/"):]
 	p, _ := loadPage(title)
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>",p.Title,p.Body)
+	renderTemplate(w, "statics/view",p)
+}
+
+func renderTemplate(w http.ResponseWriter , templ string, p *Page){
+	t, _ := template.ParseFiles(templ+".html")
+	t.Execute(w,p)
 }
