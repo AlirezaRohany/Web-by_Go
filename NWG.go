@@ -18,9 +18,10 @@ func main(){
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/edit/", editHandler)
+	http.HandleFunc("/save/",saveHandler)
 	log.Fatal(http.ListenAndServe(":8080",nil))
 
-	// todo:handlin non ex
+	// todo:error handling
 }
 
 
@@ -44,7 +45,7 @@ func loadPage(title string) (*Page, error){
 }
 
 func handler(w http.ResponseWriter, r *http.Request){
-	fmt.Fprintf(w, "Hello!, I hate %s!\n", r.URL.Path[1:])
+	fmt.Fprintf(w, "Hello!, I have %s!\n", r.URL.Path[1:])
 }
 
 // func viewHandler(w http.ResponseWriter, r *http.Request){
@@ -78,11 +79,22 @@ func editHandler(w http.ResponseWriter, r *http.Request){
 
 func viewHandler(w http.ResponseWriter, r *http.Request){
 	title:= r.URL.Path[len("/view/"):]
-	p, _ := loadPage(title)
-	renderTemplate(w, "statics/view",p)
+	p, err := loadPage(title)
+	if err!=nil{
+		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
+	}
+	renderTemplate(w, "statics/view", p)
 }
 
 func renderTemplate(w http.ResponseWriter , templ string, p *Page){
 	t, _ := template.ParseFiles(templ+".html")
 	t.Execute(w,p)
+}
+
+func saveHandler(w http.ResponseWriter, r *http.Request){
+	title:= r.URL.Path[len("/save/"):]
+	body:= r.FormValue("body")
+	p:= &Page{Title: title, Body: []byte(body)}
+	p.save()
+	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
