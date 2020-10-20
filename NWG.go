@@ -8,6 +8,10 @@ import (
 	"html/template"
 )
 
+
+var templates= template.Must(template.ParseFiles("statics/edit.html","statics/view.html"))
+
+
 func main(){
 	
 	p1:= Page{Title:"TestPage",Body:[]byte("This is a go page!")}
@@ -74,7 +78,7 @@ func editHandler(w http.ResponseWriter, r *http.Request){
 	if err!=nil{
 		p=&Page{Title:title}
 	}
-	renderTemplate(w,"statics/edit",p)
+	renderTemplate(w,"edit",p)
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request){
@@ -83,18 +87,22 @@ func viewHandler(w http.ResponseWriter, r *http.Request){
 	if err!=nil{
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 	}
-	renderTemplate(w, "statics/view", p)
+	renderTemplate(w, "view", p)
 }
 
 func renderTemplate(w http.ResponseWriter , templ string, p *Page){
-	t, err := template.ParseFiles(templ+".html")
-	if err!=nil{
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// t, err := template.ParseFiles(templ+".html")
+	// if err!=nil{
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	err = t.Execute(w,p)
-	if err!=nil{
+	// err = t.Execute(w,p)
+	// if err!=nil{
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// }
+	err:=templates.ExecuteTemplate(w, templ+".html", p)
+	if err !=nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
