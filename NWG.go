@@ -6,11 +6,13 @@ import (
 	"log"
 	"net/http"
 	"html/template"
+	"regexp"
+	 "errors"
 )
 
 
 var templates= template.Must(template.ParseFiles("statics/edit.html","statics/view.html"))
-
+var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
 func main(){
 	
@@ -25,7 +27,7 @@ func main(){
 	http.HandleFunc("/save/",saveHandler)
 	log.Fatal(http.ListenAndServe(":8080",nil))
 
-	// todo:template caching
+	// todo:Introducing Function Literals and Closures
 }
 
 
@@ -73,7 +75,11 @@ func handler(w http.ResponseWriter, r *http.Request){
 // }
 
 func editHandler(w http.ResponseWriter, r *http.Request){
-	title:= r.URL.Path[len("/edit/"):]
+	// title:= r.URL.Path[len("/edit/"):]
+	title, err := getTitle(w,r)
+	if err != nil{
+		return
+	}
 	p, err:=loadPage(title)
 	if err!=nil{
 		p=&Page{Title:title}
@@ -82,7 +88,11 @@ func editHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request){
-	title:= r.URL.Path[len("/view/"):]
+	// title:= r.URL.Path[len("/view/"):]
+	title, err := getTitle(w,r)
+	if err!= nil{
+		return
+	}
 	p, err := loadPage(title)
 	if err!=nil{
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
@@ -108,7 +118,11 @@ func renderTemplate(w http.ResponseWriter , templ string, p *Page){
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request){
-	title:= r.URL.Path[len("/save/"):]
+	// title:= r.URL.Path[len("/save/"):]
+	title, errr := getTitle(w,r)
+	if errr != nil{
+		return
+	}
 	body:= r.FormValue("body")
 	p:= &Page{Title: title, Body: []byte(body)}
 	err:=p.save()
@@ -117,4 +131,13 @@ func saveHandler(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
+}
+
+func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
+    m := validPath.FindStringSubmatch(r.URL.Path)
+    if m == nil {
+        http.NotFound(w, r)
+        return "", errors.New("Invalid Page Title")
+    }
+    return m[2], nil // The title is the second subexpression.
 }
